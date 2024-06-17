@@ -2,47 +2,52 @@
 
 <PageTitle>Pomodoro do homem</PageTitle>
 
-<h1>Você vai estudar, vagabundo. @* @ts *@</h1>
+<h1>Você vai estudar, vagabundo.</h1>
 <div>
     <button class="btn btn-primary" @onclick="() => IniciarMinutos(25)">25 min</button>
     <button class="btn btn-primary" @onclick="() => IniciarMinutos(5)">5 min PAUSA</button>
     <button class="btn btn-primary" @onclick="() => IniciarMinutos(50)">50 min LONGA</button>
-
 </div>
 
 
-<h2>Contador de estudo: @ValorDoContadorSegundos e @MAX_TIME </h2>
-<button class="btn btn-primary" @onclick="DiminuirContadorRegressivo" disabled="@TimerAndamento" >Começar</button>
-<button class="btn btn-primary" @onclick="PausarContador">Pausar</button>
+<h2>Contador de estudo: @ValorDoContadorSegundos e @TempoFormatado </h2>
+<button class="btn btn-primary" @onclick="DiminuirContadorRegressivo" disabled="@TimerAndamento">Começar</button>
+<button class="btn btn-primary" @onclick="PausarContador" disabled="@(TimerAndamento == false)">Pausar</button>
+<button class="btn btn-primary" @onclick="() => playAudioWithValidation()">Testar som</button>
 
-<HomeHistory></HomeHistory>
 
 Welcome to your new app.
 
 @code {
+    [Inject]
+    IJSRuntime JSRuntime { get; set; }
 
-    private string MAX_TIME = "00:00:00";
+    private string TempoFormatado = "00:00:00";
     private int ValorDoContadorSegundos = 0;
     private bool TimerAndamento = false;
 
+
     private async Task DiminuirContadorRegressivo()
     {
+
         if (!TimerAndamento)
-        {
+        {   
             TimerAndamento = true;
 
-            while(ValorDoContadorSegundos > 0 && TimerAndamento == true)
+            while (ValorDoContadorSegundos > 0 && TimerAndamento == true)
             {
                 ValorDoContadorSegundos--;
-                await Task.Delay(1000);
                 TimeSpan ts = TimeSpan.FromSeconds(ValorDoContadorSegundos);
 
-                MAX_TIME = ts.ToString();
+                TempoFormatado = ts.ToString();
+                await Task.Delay(1000);
+
+                await playAudioWithValidation();
 
                 await InvokeAsync(StateHasChanged);
+
             }
         }
-
     }
 
     private void PausarContador()
@@ -52,9 +57,22 @@ Welcome to your new app.
 
     private void IniciarMinutos(int tempoMinutos)
     {
-        ValorDoContadorSegundos = (tempoMinutos * 60);
-        MAX_TIME = tempoMinutos.ToString();
 
+        if(TimerAndamento == false)
+        {
+            ValorDoContadorSegundos = (tempoMinutos * 60);
+            TempoFormatado = tempoMinutos.ToString();
+        }
+
+    }
+
+    private async Task playAudioWithValidation()
+    {
+        if (ValorDoContadorSegundos == 0 && TimerAndamento == true)
+        {
+            await JSRuntime.InvokeVoidAsync("playAudio");
+            
+        }
     }
 
 
